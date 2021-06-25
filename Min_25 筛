@@ -1,0 +1,73 @@
+#include<cstdio>
+#include<cmath>
+#include<cstring>
+
+using namespace std;
+
+typedef long long LL;
+
+const LL mod = 1e9 + 7, inv2 = 500000004, inv3 = 333333336;
+const int N = 1e5 + 5;
+
+LL n, Prime[N + 5], num, sp1[N + 5], sp2[N + 5], tot =  0, w[3 * N], g1[3 * N], g2[3 * N], sqr;
+int id1[N + 5], id2[N + 5];
+bool notPrime[N + 5];
+
+void init() {
+	memset(notPrime, false, sizeof(notPrime));
+	num = 0;
+	for(int i = 2; i <= N; i++) {
+		if(!notPrime[i]) {
+			Prime[++num] = i;
+			sp1[num] = (sp1[num - 1] + i) % mod;
+			sp2[num] = (sp2[num - 1] + 1ll * i * i % mod) % mod;
+		}
+		for(int j = 1; j <= num && Prime[j] * i <= N; j++) {
+			notPrime[i * Prime[j]] = true;
+			if(i % Prime[j] == 0) break;
+		}
+	}
+}
+
+LL s(LL x, int y) {
+	if(Prime[y] >= x) return 0;
+	LL k = x <= sqr ? id1[x] : id2[n / x];
+	LL ans = (g2[k] - g1[k] + mod - (sp2[y] - sp1[y]) + mod) % mod;
+	for(int i = y + 1; i <= num && Prime[i] * Prime[i] <= x; i++) {
+		LL P = Prime[i];
+		for(int e = 1; P <= x; e++, P = P * Prime[i]) {
+			LL xx = P % mod;
+			ans = (ans + xx * (xx - 1) % mod * (s(x / P, i) + (e != 1))) % mod;
+		}
+	}
+	return ans % mod;
+}
+
+int main() {
+	init();
+	scanf("%lld", &n);
+	sqr = sqrt(n);
+	for(LL l = 1, r; l <= n; l = r + 1) {
+		r = (n / (n / l));
+		w[++tot] = n / l;
+		g1[tot] = w[tot] % mod;
+		g2[tot] = g1[tot] * (g1[tot] + 1) / 2 % mod * (2 * g1[tot] + 1) % mod * inv3 % mod - 1;
+		if(g2[tot] < 0) g2[tot] += mod;
+		g1[tot] = g1[tot] * (g1[tot] + 1) / 2 % mod - 1;
+		if(g1[tot] < 0) g1[tot] += mod;
+		if(w[tot] <= sqr) id1[w[tot]] = tot;
+			else id2[n / w[tot]] = tot;
+	}
+	for(int i = 1; i <= num; i++)
+		for(int j = 1; j <= tot && Prime[i] * Prime[i] <= w[j]; j++) {
+			LL k = w[j] / Prime[i];
+			k = k <= sqr ? id1[k] : id2[n / k];
+			g1[j] -= Prime[i] * (g1[k] - sp1[i - 1] + mod) % mod;
+			g2[j] -= Prime[i] * Prime[i] % mod * (g2[k] - sp2[i - 1] + mod) % mod;
+			g1[j] %= mod, g2[j] %= mod;
+			if(g1[j] < 0) g1[j] += mod;
+			if(g2[j] < 0) g2[j] += mod;
+		}
+	printf("%lld", (s(n, 0) + 1) % mod); 
+	return 0;
+}
